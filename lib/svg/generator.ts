@@ -1,5 +1,5 @@
 import type { BadgeParams, ContributionCalendar, StreakStats, MonthlyStats } from '../../types';
-import { getLabels } from '../i18n/badgeLabels';
+import { getLabels, type BadgeLabels } from '../i18n/badgeLabels';
 import { AUTO_DARK_THEME, AUTO_LIGHT_THEME } from './themes';
 import { TOWER_ANIMATION_CSS } from './animations';
 import { computeTowers, type TowerData } from './layout';
@@ -35,6 +35,14 @@ function scaleTowerData(towerData: TowerData[], sf: number): TowerData[] {
     y: Math.round(t.y * sf),
     h: t.h * sf,
   }));
+}
+
+/** Rounds a base value by the current size-scale factor. */
+type Scaler = (n: number) => number;
+
+/** Avoids duplicating the rounding scaler in every rendering function. */
+function createScaler(sf: number): Scaler {
+  return (n: number): number => Math.round(n * sf);
 }
 
 export function escapeXML(str: string): string {
@@ -116,6 +124,23 @@ function renderHeader(safeUser: string, stats: StreakStats, sf: number): string 
   </defs>`;
 }
 
+/** Renders the three-column stats row (Current Streak / Annual Sync Total / Peak Streak). */
+function renderStatsSection(stats: StreakStats, labels: BadgeLabels, s: Scaler): string {
+  return `
+  <g transform="translate(${s(40)}, ${s(340)})">
+    <text class="label">${labels.CURRENT_STREAK}</text>
+    <text y="${s(40)}" class="stats" filter="url(#glow)">${stats.currentStreak}</text>
+  </g>
+  <g transform="translate(${s(300)}, ${s(340)})" text-anchor="middle">
+    <text class="label">${labels.ANNUAL_SYNC_TOTAL}</text>
+    <text y="${s(40)}" class="total-val" filter="url(#glow)">${stats.totalContributions}</text>
+  </g>
+  <g transform="translate(${s(560)}, ${s(340)})" text-anchor="end">
+    <text class="label">${labels.PEAK_STREAK}</text>
+    <text y="${s(40)}" class="stats">${stats.longestStreak}</text>
+  </g>`;
+}
+
 function renderStyle(
   selectedFont: string | null,
   statsFont: string,
@@ -168,25 +193,9 @@ function renderFooter(
   accent: string,
   sf: number
 ): string {
-  const s = (n: number) => Math.round(n * sf);
+  const s = createScaler(sf);
   return `
-  ${
-    !params.hide_stats
-      ? `
-  <g transform="translate(${s(40)}, ${s(340)})">
-    <text class="label">${labels.CURRENT_STREAK}</text>
-    <text y="${s(40)}" class="stats" filter="url(#glow)">${stats.currentStreak}</text>
-  </g>
-  <g transform="translate(${s(300)}, ${s(340)})" text-anchor="middle">
-    <text class="label">${labels.ANNUAL_SYNC_TOTAL}</text>
-    <text y="${s(40)}" class="total-val" filter="url(#glow)">${stats.totalContributions}</text>
-  </g>
-  <g transform="translate(${s(560)}, ${s(340)})" text-anchor="end">
-    <text class="label">${labels.PEAK_STREAK}</text>
-    <text y="${s(40)}" class="stats">${stats.longestStreak}</text>
-  </g>`
-      : ''
-  }
+  ${!params.hide_stats ? renderStatsSection(stats, labels, s) : ''}
   ${!params.hide_title ? `<text x="${s(300)}" y="${s(50)}" text-anchor="middle" class="title">${safeUser.toUpperCase()}</text>` : ''}
   <rect x="${s(100)}" y="${s(60)}" width="${s(400)}" height="${sf}" fill="${accent}" fill-opacity="0.3">
     <animate attributeName="y" values="${s(80)};${s(320)};${s(80)}" dur="${params.speed || '8s'}" repeatCount="indefinite" />
@@ -290,8 +299,8 @@ function generateAutoThemeSVG(
       towers += generateAutoParticles(t.x, t.y, t.h, t.contributionCount, sf);
   }
 
-  const s = (n: number) => Math.round(n * sf);
-  const fs = (n: number) => Math.round(n * sf * 10) / 10;
+  const s = createScaler(sf);
+  const fs = (n: number): number => Math.round(n * sf * 10) / 10;
 
   return `
 <svg
@@ -328,26 +337,7 @@ function generateAutoThemeSVG(
   <g transform="translate(0, ${s(20)})">
     ${towers}
   </g>
-  ${
-    !params.hide_stats
-      ? `
-  <g transform="translate(${s(40)}, ${s(340)})">
-    <text class="label">${labels.CURRENT_STREAK}</text>
-    <text y="${s(40)}" class="stats" filter="url(#glow)">${stats.currentStreak}</text>
-  </g>
-
-  <g transform="translate(${s(300)}, ${s(340)})" text-anchor="middle">
-    <text class="label">${labels.ANNUAL_SYNC_TOTAL}</text>
-    <text y="${s(40)}" class="total-val" filter="url(#glow)">${stats.totalContributions}</text>
-  </g>
-
-  <g transform="translate(${s(560)}, ${s(340)})" text-anchor="end">
-    <text class="label">${labels.PEAK_STREAK}</text>
-    <text y="${s(40)}" class="stats">${stats.longestStreak}</text>
-  </g>
-`
-      : ''
-  }
+  ${!params.hide_stats ? renderStatsSection(stats, labels, s) : ''}
 ${
   !params.hide_title
     ? `<text x="${s(300)}" y="${s(50)}" text-anchor="middle" class="title">${safeUser.toUpperCase()}</text>`

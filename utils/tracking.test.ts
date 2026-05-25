@@ -18,10 +18,7 @@ describe('trackUser', () => {
     trackUser('testuser');
 
     expect(sendBeaconMock).toHaveBeenCalledTimes(1);
-    expect(sendBeaconMock).toHaveBeenCalledWith(
-      '/api/track-user',
-      expect.any(Blob)
-    );
+    expect(sendBeaconMock).toHaveBeenCalledWith('/api/track-user', expect.any(Blob));
   });
 
   it('falls back to fetch when sendBeacon is not available', () => {

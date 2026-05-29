@@ -62,3 +62,26 @@ export const LANGUAGES = [
 ] as const satisfies readonly { value: string; label: string }[];
 
 export type Language = (typeof LANGUAGES)[number]['value'];
+
+export interface CustomizeOptions {
+  username: string;
+  theme: string;
+  bgHex: string;
+  accentHex: string;
+  textHex: string;
+  scale: Scale;
+  speed: string;
+  font: Font;
+  year: string;
+  radius: number;
+  size: BadgeSize;
+  hideTitle: boolean;
+  hideBackground: boolean;
+  hideStats: boolean;
+  viewMode: ViewMode;
+  deltaFormat: DeltaFormat;
+  badgeWidth: number | '';
+  badgeHeight: number | '';
+  grace: number;
+  language: Language;
+}

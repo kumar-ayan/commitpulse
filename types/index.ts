@@ -71,6 +71,9 @@ export interface ContributionCalendar {
 
   /** Array of weekly contribution data covering the queried date range. */
   weeks: ContributionWeek[];
+
+  /** Timestamp of the last successful GraphQL API sync. Used for delta updates. */
+  lastSyncedAt?: string;
 }
 
 /**
@@ -100,6 +103,8 @@ export interface MonthlyStats {
 export interface BadgeParams {
   /** GitHub username whose contribution data will be fetched and rendered. Required. */
   user: string;
+  /** GitHub username of the opponent to compare against. */
+  versus?: string;
 
   /** Number of grace days before a streak resets (handles timezone edge cases). Defaults to 1. */
   grace?: number;
@@ -111,7 +116,7 @@ export interface BadgeParams {
   text: HexColor;
 
   /** Tower and glow accent color as a hex string WITHOUT the leading '#'. Overrides theme default. */
-  accent: HexColor;
+  accent: HexColor | HexColor[];
 
   /** Duration of the radar scan line animation (e.g. '4s', '8s', '12s'). Defaults to '8s'. */
   speed: SpeedString;
@@ -124,6 +129,9 @@ export interface BadgeParams {
 
   /** Border corner radius in pixels. Defaults to 8. */
   radius?: number;
+
+  /** Custom stroke color for the main SVG container. Hex string WITHOUT the leading '#'. */
+  border?: string;
 
   /** When true, automatically selects a theme based on the viewer's system color scheme. */
   autoTheme?: boolean;
@@ -169,4 +177,38 @@ export interface BadgeParams {
 
   /** Custom text color for the labels. Overrides text parameter. */
   labelColor?: HexColor;
+
+  /**
+   * When true, applies intensity-based opacity shading to tower faces so
+   * lower intensity levels appear slightly translucent/dimmer.
+   * Default is false (opt-in).
+   */
+  shading?: boolean;
+
+  /** Opt-in to show volumetric gradients on the monolith floor. */
+  gradient?: boolean;
+
+  disable_particles?: boolean;
+}
+
+export interface GraphNode {
+  id: string;
+  name: string;
+  type: 'User' | 'Repo' | 'Contribution' | 'Fork';
+  val: number;
+  color: string;
+  stats?: {
+    stars?: number;
+    forks?: number;
+    language?: string | null;
+    updatedAt?: string;
+    description?: string | null;
+  };
+  x?: number;
+  y?: number;
+}
+
+export interface GraphLink {
+  source: string | GraphNode;
+  target: string | GraphNode;
 }

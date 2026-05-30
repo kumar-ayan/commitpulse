@@ -361,5 +361,4 @@ describe('LandingPage', () => {
 
     expect(document.querySelector('script')).toBeNull();
   });
-
 });

@@ -724,12 +724,17 @@ describe('GET /api/streak', () => {
       expect(body).toContain('--cp-bg');
     });
 
-    it('falls back to the dark theme without crashing when an unknown theme is given', async () => {
-      const response = await GET(makeRequest({ user: 'octocat', theme: 'does-not-exist' }));
-      const body = await response.text();
+    it('returns 400 Bad Request listing allowed themes when an invalid theme is provided', async () => {
+      const response = await GET(makeRequest({ user: 'octocat', theme: 'nonexistent_theme_name' }));
+      expect(response.status).toBe(400);
 
-      expect(response.status).toBe(200);
-      expect(body).toContain('58a6ff');
+      const body = await response.json();
+      expect(body.error).toBe('Invalid parameters');
+      const fieldError = body.details.fieldErrors.theme[0];
+      expect(fieldError).toContain('Invalid theme. Supported themes:');
+      expect(fieldError).toContain('dark');
+      expect(fieldError).toContain('light');
+      expect(fieldError).toContain('neon');
     });
   });
 

@@ -70,7 +70,19 @@ const baseStreakParamsSchema = z.object({
       message: 'Invalid GitHub username',
     }),
 
-  theme: z.string().default('dark'),
+  theme: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (val === undefined || val === '') return true;
+        return val === 'auto' || val === 'random' || Object.hasOwn(themes, val);
+      },
+      {
+        message: `Invalid theme. Supported themes: ${['auto', 'random', ...Object.keys(themes)].join(', ')}`,
+      }
+    )
+    .default('dark'),
   bg: z
     .string()
     .optional()

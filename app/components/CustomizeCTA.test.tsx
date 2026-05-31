@@ -179,6 +179,8 @@ describe('CustomizeCTA', () => {
 
       expect(button?.className).toContain('px-4');
       expect(button?.className).toContain('md:px-7');
+    });
+  });
 
   describe('responsive breakpoints', () => {
     it('renders all layout structure elements across viewports', () => {

@@ -224,7 +224,14 @@ export default function ProfileOptimizerModal({
     },
   ];
 
-  const recommendations = [];
+  const recommendations: {
+    priority: string;
+    category: string;
+    issue: string;
+    recommendation: string;
+    action: string;
+    impact?: string;
+  }[] = [];
 
   // Sort categories by score ascending to focus on the worst ones
   const sortedCategories = [...categories].sort((a, b) => a.score - b.score);

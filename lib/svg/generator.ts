@@ -75,6 +75,35 @@ export function particleCount(count: number): number {
   return Math.min(5, Math.max(3, Math.floor(count / 4)));
 }
 
+export function buildTowerPaths(
+  t: TowerData | null | undefined,
+  fillAttr: string | null | undefined,
+  strokeAttr: string | null | undefined
+): string {
+  if (!t || typeof t.h !== 'number') return '';
+  const h = t.h;
+  const fAttr = fillAttr || 'fill="transparent"';
+  const sAttr = strokeAttr || 'stroke="transparent"';
+
+  const faceOpacity = t.faceOpacity || { left: 0, right: 0, top: 0 };
+  const leftOp = faceOpacity.left ?? 0;
+  const rightOp = faceOpacity.right ?? 0;
+  const topOp = faceOpacity.top ?? 0;
+
+  const sOp = t.strokeOpacity ?? 0;
+  const sW = t.strokeWidth ?? 0;
+
+  let paths = `<path d="M0 ${10 - h} L0 10 L-16 0 L-16 ${-h} Z" ${fAttr} fill-opacity="${leftOp}" ${sAttr} stroke-opacity="${sOp}" stroke-width="${sW}" />\n`;
+  paths += `<path d="M0 ${10 - h} L0 10 L16 0 L16 ${-h} Z" ${fAttr} fill-opacity="${rightOp}" ${sAttr} stroke-opacity="${sOp}" stroke-width="${sW}" />\n`;
+  paths += `<path d="M0 ${-h} L16 ${10 - h} L0 ${20 - h} L-16 ${10 - h} Z" ${fAttr} fill-opacity="${topOp}" ${sAttr} stroke-opacity="${sOp}" stroke-width="${sW}" />`;
+
+  if (typeof t.contributionCount === 'number' && t.contributionCount > 5) {
+    paths += `\n<path d="M0 ${-h} L16 ${10 - h} L0 ${20 - h} L-16 ${10 - h} Z" fill="white" fill-opacity="0.2" />`;
+  }
+
+  return paths;
+}
+
 function generateParticles(
   x: number,
   y: number,

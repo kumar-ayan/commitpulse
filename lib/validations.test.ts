@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { githubParamsSchema, ogParamsSchema, streakParamsSchema } from './validations';
+import {
+  githubParamsSchema,
+  ogParamsSchema,
+  streakParamsSchema,
+  validateGitHubUsername,
+} from './validations';
 
 describe('streakParamsSchema — grace fallback behavior', () => {
   it('accepts "0" as a valid grace value', () => {
@@ -37,6 +42,36 @@ describe('streakParamsSchema — grace fallback behavior', () => {
 
   it('defaults to 1 when grace is omitted', () => {
     expect(parse({}).grace).toBe(1);
+  });
+});
+
+describe('validateGitHubUsername', () => {
+  it('returns true for a valid username', () => {
+    expect(validateGitHubUsername('valid-username-123')).toBe(true);
+  });
+
+  it('returns false for a too long username', () => {
+    expect(validateGitHubUsername('a'.repeat(40))).toBe(false);
+  });
+
+  it('returns false for a username with underscore', () => {
+    expect(validateGitHubUsername('invalid_username')).toBe(false);
+  });
+
+  it('returns false for empty string', () => {
+    expect(validateGitHubUsername('')).toBe(false);
+  });
+
+  it('returns false for leading hyphen', () => {
+    expect(validateGitHubUsername('-octocat')).toBe(false);
+  });
+
+  it('returns false for trailing hyphen', () => {
+    expect(validateGitHubUsername('octocat-')).toBe(false);
+  });
+
+  it('returns false for consecutive hyphens', () => {
+    expect(validateGitHubUsername('octo--cat')).toBe(false);
   });
 });
 

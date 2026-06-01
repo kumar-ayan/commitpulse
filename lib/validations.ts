@@ -47,6 +47,10 @@ export function toDimensionValue(val?: string): number | undefined {
   return val === undefined ? undefined : Number(val);
 }
 
+export function validateGitHubUsername(username: string): boolean {
+  return /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i.test(username);
+}
+
 function dimensionParam(name: string, min: number, max: number) {
   return z
     .string()

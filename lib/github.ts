@@ -315,10 +315,6 @@ const getHeaders = () => ({
   'Content-Type': 'application/json',
 });
 
-export function validateGitHubUsername(username: string): boolean {
-  return /^[a-z\d](?:[a-z\d]|-(?=[a-z\d])){0,38}$/i.test(username);
-}
-
 export function displayName(profile: GitHubUserProfile): string {
   if (typeof profile.name === 'string' && profile.name.trim() !== '') return profile.name;
   return profile.login;

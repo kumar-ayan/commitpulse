@@ -1110,6 +1110,7 @@ export default function CompareClient() {
           {/* Loading */}
           {loading && <CompareSkeleton />}
 
+<<<<<<< HEAD
           {/* Results */}
           <AnimatePresence>
             {d1 && d2 && !loading && (
@@ -1128,6 +1129,169 @@ export default function CompareClient() {
                 <div className="relative z-10 space-y-8">
                   {/* Winner Banner */}
                   {winner && (
+=======
+        {/* Error */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="mb-8 p-4 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 text-center"
+            >
+              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Loading */}
+        {loading && <CompareSkeleton />}
+
+        {/* Results */}
+        <AnimatePresence>
+          {d1 && d2 && !loading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="space-y-8"
+            >
+              {/* Winner Banner */}
+              {winner && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.2 }}
+                  className="p-4 rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10 text-center"
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    <Trophy size={18} className="text-emerald-500" />
+                    <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-400">
+                      {winner === 'tie'
+                        ? "It's a Tie! Both developers are evenly matched."
+                        : `@${winner} wins the showdown!`}
+                    </span>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Profile Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative">
+                <CompareProfileCard user={d1} side="left" />
+
+                {/* VS Divider */}
+                <div className="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="w-12 h-12 rounded-full bg-white dark:bg-[#0a0a0a] border-2 border-emerald-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.2)]">
+                    <span className="text-xs font-bold text-emerald-500 tracking-wider">VS</span>
+                  </div>
+                </div>
+
+                <CompareProfileCard user={d2} side="right" />
+              </div>
+
+              {/* Stats Battle Grid */}
+              <div>
+                <h2 className="text-xs text-[#A1A1AA] uppercase tracking-widest font-medium mb-4">
+                  Stats Showdown
+                </h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <StatBattle
+                    label="Current Streak"
+                    icon={Flame}
+                    valueA={d1.stats.currentStreak}
+                    valueB={d2.stats.currentStreak}
+                  />
+                  <StatBattle
+                    label="Peak Streak"
+                    icon={TrendingUp}
+                    valueA={d1.stats.peakStreak}
+                    valueB={d2.stats.peakStreak}
+                  />
+                  <StatBattle
+                    label="Total Contributions"
+                    icon={GitCommit}
+                    valueA={d1.stats.totalContributions}
+                    valueB={d2.stats.totalContributions}
+                  />
+                  <StatBattle
+                    label="Repositories"
+                    icon={GitBranch}
+                    valueA={d1.profile.stats.repositories}
+                    valueB={d2.profile.stats.repositories}
+                  />
+                  <StatBattle
+                    label="Stars"
+                    icon={Star}
+                    valueA={d1.profile.stats.stars}
+                    valueB={d2.profile.stats.stars}
+                  />
+                  <StatBattle
+                    label="Followers"
+                    icon={Users}
+                    valueA={d1.profile.stats.followers}
+                    valueB={d2.profile.stats.followers}
+                  />
+                  <StatBattle
+                    label="Pull Requests"
+                    icon={GitPullRequest}
+                    valueA={d1.stats.totalPRs || 0}
+                    valueB={d2.stats.totalPRs || 0}
+                  />
+                  <StatBattle
+                    label="Issues"
+                    icon={CircleDot}
+                    valueA={d1.stats.totalIssues || 0}
+                    valueB={d2.stats.totalIssues || 0}
+                  />
+                </div>
+              </div>
+
+              {/* Coding Habits Showdown */}
+              <CodingHabitShowdown user1={d1} user2={d2} />
+
+              {/* Code Volume Showdown */}
+              <CodeVolumeShowdown user1={d1} user2={d2} />
+
+              {/* Developer Skills Radar */}
+              <DeveloperSkillsRadar user1={d1} user2={d2} />
+
+              {/* Language Comparison */}
+              <LanguageComparison
+                langsA={d1.languages}
+                langsB={d2.languages}
+                nameA={d1.profile.username}
+                nameB={d2.profile.username}
+              />
+
+              {/* Activity Heatmaps */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[
+                  { user: d1, side: 'left' as const },
+                  { user: d2, side: 'right' as const },
+                ].map(({ user, side }) => (
+                  <motion.div
+                    key={side}
+                    initial={{ opacity: 0, y: 12 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="p-5 rounded-xl bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-[rgba(255,255,255,0.08)]"
+                  >
+                    <h3 className="text-xs text-[#A1A1AA] uppercase tracking-widest font-medium mb-3">
+                      {user.profile.username}&apos;s Activity (Last 13 Weeks)
+                    </h3>
+                    <MiniHeatmap activity={user.activity} />
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* 3D Monolith Embeds */}
+              <div>
+                <h2 className="text-xs text-[#A1A1AA] uppercase tracking-widest font-medium mb-4">
+                  3D Monolith Comparison
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[d1, d2].map((user) => (
+>>>>>>> b375b18 (feat(compare): add animated developer persona badges using framer-motion and lucide-react)
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}

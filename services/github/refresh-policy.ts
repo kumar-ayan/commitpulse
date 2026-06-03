@@ -34,7 +34,7 @@ export class RefreshPolicy {
    * 2. The global GitHub API token quota is not low.
    */
   public isRefreshAllowed(username: string): boolean {
-    const sanitized = username.trim().toLowerCase();
+    const sanitized = username.trim().toLowerCase().slice(0, 255);
 
     // 1. Check if global quota is dangerously low
     if (quotaMonitor.isQuotaLow()) {
@@ -60,12 +60,13 @@ export class RefreshPolicy {
    * Records a successful refresh event for the username.
    */
   public recordRefresh(username: string): void {
-    const sanitized = username.trim().toLowerCase();
+    const sanitized = username.trim().toLowerCase().slice(0, 255);
     // When cooldownMs is 0 there is nothing to enforce, skip the write
     // (TTLCache rejects ttlMs <= 0). Use a fallback key for empty usernames.
     if (this.cooldownMs > 0) {
       const cacheKey = sanitized === '' ? '__anonymous__' : sanitized;
-      this.refreshTimes.set(cacheKey, Date.now(), this.cooldownMs);
+      // Store with a long TTL (1 hour) to allow dynamic cooldown increases later.
+      this.refreshTimes.set(cacheKey, Date.now(), 60 * 60 * 1000);
     }
     quotaMonitor.incrementRefreshCount();
   }
@@ -75,7 +76,7 @@ export class RefreshPolicy {
    * Returns 0 if no cooldown is active.
    */
   public getRemainingCooldown(username: string): number {
-    const sanitized = username.trim().toLowerCase();
+    const sanitized = username.trim().toLowerCase().slice(0, 255);
     const cacheKey = sanitized === '' ? '__anonymous__' : sanitized;
     const lastRefresh = this.refreshTimes.get(cacheKey);
     if (!lastRefresh) {

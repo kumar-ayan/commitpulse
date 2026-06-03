@@ -27,8 +27,9 @@ describe('RefreshPolicy - Massive Scaling & Bounds (Variation 2)', () => {
     }
 
     // Verify a random subset to ensure map holds state correctly
-    expect(policy.isRefreshAllowed(`user_0`)).toBe(false);
-    expect(policy.isRefreshAllowed(`user_5000`)).toBe(false);
+    // Note: TTLCache maxSize is 5000, so older users are evicted
+    expect(policy.isRefreshAllowed(`user_9000`)).toBe(false);
+    expect(policy.isRefreshAllowed(`user_8000`)).toBe(false);
     expect(policy.isRefreshAllowed(`user_9999`)).toBe(false);
     expect(policy.isRefreshAllowed(`unrecorded_user`)).toBe(true);
   });

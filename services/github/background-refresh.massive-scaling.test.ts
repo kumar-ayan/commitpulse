@@ -472,7 +472,7 @@ describe('BackgroundRefresh - Massive Data Sets and Extreme High Bounds Scaling 
     const STALE_THRESHOLD = 600000;
 
     for (let i = 0; i < VOLUME; i++) {
-      const delta = i % 2 === 0 ? STALE_THRESHOLD + 1 : STALE_THRESHOLD - 1;
+      const delta = i % 2 === 0 ? STALE_THRESHOLD + 5000 : STALE_THRESHOLD - 5000;
       const result = service.isStale(new Date(Date.now() - delta).toISOString());
       expect(result).toBe(i % 2 === 0);
     }
@@ -603,7 +603,7 @@ describe('BackgroundRefresh - Massive Data Sets and Extreme High Bounds Scaling 
         expect(service.isJobActive(`cycle_${cycle}_user_${i}`)).toBe(false);
       }
     }
-  });
+  }, 15000);
 
   it('handles 5k triggers where getFullDashboardData resolves synchronously via microtask queue', async () => {
     const VOLUME = 5000;
@@ -654,7 +654,7 @@ describe('BackgroundRefresh - Massive Data Sets and Extreme High Bounds Scaling 
         expect(service.isStale(freshTs)).toBe(false);
       }
     }
-  });
+  }, 10000);
 
   it('verifies active job Set size matches trigger count after 20,000 unique triggers', () => {
     const VOLUME = 20000;

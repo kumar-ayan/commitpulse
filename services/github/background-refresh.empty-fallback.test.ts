@@ -39,6 +39,7 @@ describe('BackgroundRefresh empty fallback behavior', () => {
 
   it('handles invalid date strings without throwing runtime errors', () => {
     expect(() => service.isStale('not-a-valid-date')).not.toThrow();
+    expect(service.isStale('not-a-valid-date')).toBe(true);
   });
 
   it('handles username with surrounding spaces without creating duplicate jobs', () => {
@@ -48,7 +49,7 @@ describe('BackgroundRefresh empty fallback behavior', () => {
     expect(service.isJobActive('mayank200529')).toBe(true);
     expect(mockedGetFullDashboardData).toHaveBeenCalledTimes(1);
     expect(mockedGetFullDashboardData).toHaveBeenCalledWith('  Mayank200529  ', {
-      bypassCache: true,
+      forceRefresh: true,
     });
   });
 

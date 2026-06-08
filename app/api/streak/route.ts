@@ -230,7 +230,8 @@ export async function GET(request: Request) {
       const users = user
         .split(',')
         .map((u) => u.trim())
-        .filter(Boolean);
+        .filter(Boolean)
+        .slice(0, 2);
       let lastError: unknown = null;
       let hasOfflineFallback = false;
       const fetchedCalendars = await Promise.all(

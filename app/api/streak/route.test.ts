@@ -1629,5 +1629,29 @@ describe('GET /api/streak', () => {
       const response = await GET(makeRequest({ user: 'a, b' }));
       expect(response.status).toBe(404);
     });
+
+    it('limits concurrent fetching to at most 2 users', async () => {
+      vi.mocked(fetchGitHubContributions)
+        .mockResolvedValueOnce({
+          calendar: mockCalendar,
+          repoContributions: [],
+        } as unknown as ExtendedContributionData)
+        .mockResolvedValueOnce({
+          calendar: mockCalendar,
+          repoContributions: [],
+        } as unknown as ExtendedContributionData);
+
+      const response = await GET(makeRequest({ user: 'a, b, c, d' }));
+      expect(response.status).toBe(200);
+
+      expect(fetchGitHubContributions).toHaveBeenCalledWith('a', expect.any(Object));
+      expect(fetchGitHubContributions).toHaveBeenCalledWith('b', expect.any(Object));
+      expect(fetchGitHubContributions).not.toHaveBeenCalledWith('c', expect.any(Object));
+      expect(fetchGitHubContributions).not.toHaveBeenCalledWith('d', expect.any(Object));
+      expect(fetchGitHubContributions).toHaveBeenCalledTimes(2);
+
+      const body = await response.text();
+      expect(body).toContain('A + B');
+    });
   });
 });

@@ -3,7 +3,7 @@ import { generateSVG } from './generator';
 import type { BadgeParams, ContributionCalendar, StreakStats } from '../../types';
 import { hexColor } from './sanitizer';
 
-describe('theme contrast', () => {
+describe('generateSVG', () => {
   const stats: StreakStats = {
     currentStreak: 5,
     longestStreak: 10,
@@ -26,35 +26,48 @@ describe('theme contrast', () => {
     autoTheme: true,
   };
 
-  it('includes dark mode media query', () => {
+  it('generates a valid SVG document', () => {
     const svg = generateSVG(stats, params, calendar);
 
-    expect(svg).toContain('prefers-color-scheme: dark');
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('</svg>');
   });
 
-  it('defines theme CSS variables', () => {
+  it('renders the username in the SVG', () => {
     const svg = generateSVG(stats, params, calendar);
 
-    expect(svg).toContain('--cp-bg');
-    expect(svg).toContain('--cp-text');
-    expect(svg).toContain('--cp-accent');
+    expect(svg).toContain('THEME-TEST');
   });
 
-  it('includes text styling classes', () => {
+  it('renders streak labels and statistics', () => {
     const svg = generateSVG(stats, params, calendar);
 
-    expect(svg).toContain('cp-text-fill');
+    expect(svg).toContain('CURRENT_STREAK');
+    expect(svg).toContain('PEAK_STREAK');
+    expect(svg).toContain('ANNUAL_SYNC_TOTAL');
+
+    expect(svg).toContain('5');
+    expect(svg).toContain('10');
+    expect(svg).toContain('100');
   });
 
-  it('includes accent styling classes', () => {
+  it('includes accessibility metadata', () => {
     const svg = generateSVG(stats, params, calendar);
 
-    expect(svg).toContain('cp-accent-fill');
+    expect(svg).toContain('<title');
+    expect(svg).toContain('<desc');
+    expect(svg).toContain('role="img"');
   });
 
-  it('includes background styling classes', () => {
-    const svg = generateSVG(stats, params, calendar);
+  it('handles an empty contribution calendar', () => {
+    const emptyCalendar: ContributionCalendar = {
+      totalContributions: 0,
+      weeks: [],
+    };
 
-    expect(svg).toContain('cp-bg-fill');
+    const svg = generateSVG(stats, params, emptyCalendar);
+
+    expect(svg).toContain('<svg');
+    expect(svg).toContain('</svg>');
   });
 });

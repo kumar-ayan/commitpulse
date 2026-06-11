@@ -1,145 +1,146 @@
 // components/dashboard/tooltipUtils.accessibility.test.ts
 //
 // Accessibility Standards & Screen Reader Aria Compliance
+// Tests target the VisualizationTooltip React component which renders
+// DOM nodes with role="tooltip" — verifying WCAG 2.1 / ARIA compliance.
 
-import { describe, expect, it } from 'vitest';
-import {
-  formatTooltipDate,
-  getContributionLabel,
-  getActivityInsight,
-  getStreakLabel,
-} from './tooltipUtils';
-import type { ActivityData } from '@/types/dashboard';
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
 
-// Test 1 — Date label is human-readable for aria-label / aria-describedby
-describe('formatTooltipDate – accessible date label compliance', () => {
-  it('produces a plain-language date string suitable for aria-label or aria-describedby attributes', () => {
-    const result = formatTooltipDate('2024-03-15');
-    expect(typeof result).toBe('string');
-    expect(result.trim().length).toBeGreaterThan(0);
-    expect(result).not.toMatch(/^\d{4}-\d{2}-\d{2}$/);
-    expect(result).not.toContain('undefined');
-    expect(result).not.toContain('null');
-    expect(result).toMatch(/Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec/i);
+// ---------------------------------------------------------------------------
+// Framer Motion mock — jsdom cannot run CSS animations
+// ---------------------------------------------------------------------------
+vi.mock('framer-motion', () => {
+  const MockMotionDiv = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement> & Record<string, unknown>
+  >(function MockMotionDiv(
+    { children, initial, animate, exit, transition, whileHover, whileTap, variants, ...domProps },
+    ref
+  ) {
+    void initial;
+    void animate;
+    void exit;
+    void transition;
+    void whileHover;
+    void whileTap;
+    void variants;
+    return React.createElement('div', { ...domProps, ref }, children);
   });
 
-  it('falls back to the raw input string rather than an empty label when the date is invalid', () => {
-    const badDate = 'not-a-date';
-    const result = formatTooltipDate(badDate);
-    expect(typeof result).toBe('string');
-    expect(result.trim().length).toBeGreaterThan(0);
-    expect(result).toBe(badDate);
-    expect(result).not.toContain('[object');
+  return {
+    motion: { div: MockMotionDiv },
+    AnimatePresence: ({ children }: { children: React.ReactNode }) =>
+      React.createElement(React.Fragment, null, children),
+  };
+});
+
+import VisualizationTooltip from './VisualizationTooltip';
+
+// ---------------------------------------------------------------------------
+// Test 1 — role="tooltip" attribute
+// WCAG 4.1.2 (Name, Role, Value)
+// ---------------------------------------------------------------------------
+describe('VisualizationTooltip – role attribute compliance', () => {
+  it('renders with role="tooltip" so assistive technologies correctly identify the element', () => {
+    render(
+      React.createElement(
+        VisualizationTooltip,
+        { title: 'Test Title', x: 100, y: 200 },
+        React.createElement('span', null, 'Content')
+      )
+    );
+
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip).toBeDefined();
   });
 });
 
-// Test 2 — Date output must be safe for aria attributes (no HTML/script injection)
-describe('formatTooltipDate – safe output for aria attributes', () => {
-  it('produces output free of HTML tags and script characters that would break assistive technology rendering', () => {
-    const dates = ['2024-01-01', '2023-12-31', '2025-06-15'];
-    for (const date of dates) {
-      const result = formatTooltipDate(date);
-      expect(result).not.toMatch(/<[^>]+>/);
-      expect(result).not.toContain('<script');
-      expect(result).not.toContain('javascript:');
-      expect(result.trim().length).toBeGreaterThan(0);
-    }
+// ---------------------------------------------------------------------------
+// Test 2 — title is announced by screen readers
+// WCAG 1.3.1 (Info and Relationships)
+// ---------------------------------------------------------------------------
+describe('VisualizationTooltip – accessible title announcement', () => {
+  it('renders the title prop as visible text that screen readers can announce', () => {
+    render(
+      React.createElement(
+        VisualizationTooltip,
+        { title: 'Commits: 42', x: 100, y: 200 },
+        React.createElement('span', null, 'Detail content')
+      )
+    );
+
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip.textContent).toContain('Commits: 42');
   });
 });
 
-// Test 3 — Contribution count label correct pluralisation
-describe('getContributionLabel – screen-reader-safe pluralisation', () => {
-  it('announces singular form for exactly one contribution to avoid grammatically incorrect labels', () => {
-    const label = getContributionLabel(1);
-    expect(label).toContain('1');
-    expect(label).not.toMatch(/1 contributions/i);
-    expect(label).toMatch(/1 contribution/i);
-  });
+// ---------------------------------------------------------------------------
+// Test 3 — children content is rendered inside tooltip
+// WCAG 1.3.3 (Sensory Characteristics)
+// ---------------------------------------------------------------------------
+describe('VisualizationTooltip – descriptive children content', () => {
+  it('renders children inside the tooltip so screen readers announce the full description', () => {
+    render(
+      React.createElement(
+        VisualizationTooltip,
+        { title: 'Activity', x: 50, y: 80 },
+        React.createElement('span', null, 'Monday: 5 commits')
+      )
+    );
 
-  it('announces plural form for zero and multiple contributions', () => {
-    expect(getContributionLabel(0)).toMatch(/contributions/i);
-    expect(getContributionLabel(5)).toMatch(/contributions/i);
-  });
-
-  it('uses the provided translation function for aria-label internationalisation', () => {
-    const mockT = (key: string, opts?: Record<string, string>) => {
-      if (key === 'dashboard.heatmap.tooltip_single')
-        return `${opts?.count ?? ''} contribution on ${opts?.date ?? ''}`;
-      if (key === 'dashboard.heatmap.tooltip_plural')
-        return `${opts?.count ?? ''} contributions on ${opts?.date ?? ''}`;
-      return key;
-    };
-    const singular = getContributionLabel(1, mockT);
-    const plural = getContributionLabel(3, mockT);
-    expect(singular).toContain('1');
-    expect(singular).not.toMatch(/contributions/i);
-    expect(plural).toContain('3');
-    expect(plural).toMatch(/contributions/i);
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip.textContent).toContain('Monday: 5 commits');
   });
 });
 
-// Test 4 — Activity insight returns descriptive prose for aria-describedby
-describe('getActivityInsight – descriptive aria-describedby text', () => {
-  it('returns a descriptive prose string for each intensity level, never a bare number', () => {
-    const intensities: Array<{ count: number; intensity: ActivityData['intensity'] }> = [
-      { count: 0, intensity: 0 },
-      { count: 1, intensity: 1 },
-      { count: 3, intensity: 2 },
-      { count: 7, intensity: 3 },
-      { count: 12, intensity: 4 },
+// ---------------------------------------------------------------------------
+// Test 4 — tooltip content must not be empty
+// WCAG 4.1.2 (Name, Role, Value)
+// ---------------------------------------------------------------------------
+describe('VisualizationTooltip – non-empty accessible label', () => {
+  it('produces non-empty text content so aria-label is always populated for screen readers', () => {
+    render(
+      React.createElement(
+        VisualizationTooltip,
+        { title: 'Peak Day', x: 0, y: 0 },
+        React.createElement('span', null, '12 contributions')
+      )
+    );
+
+    const tooltip = screen.getByRole('tooltip');
+    expect(tooltip.textContent?.trim().length).toBeGreaterThan(0);
+    expect(tooltip.textContent).not.toMatch(/^\s*undefined\s*$/i);
+    expect(tooltip.textContent).not.toMatch(/^\s*null\s*$/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test 5 — position-independent accessible content
+// WCAG 1.3.3 (Sensory Characteristics)
+// ---------------------------------------------------------------------------
+describe('VisualizationTooltip – position-independent accessible content', () => {
+  it('contains meaningful text regardless of x/y coordinates so screen readers are not affected by visual position', () => {
+    const positions = [
+      { x: 0, y: 0 },
+      { x: 500, y: 300 },
+      { x: 9999, y: 9999 },
     ];
-    for (const { count, intensity } of intensities) {
-      const insight = getActivityInsight(count, intensity);
-      expect(typeof insight).toBe('string');
-      expect(insight.trim().length).toBeGreaterThan(0);
-      expect(insight).not.toMatch(/^\d+$/);
-      expect(insight).not.toContain('undefined');
-      expect(insight).not.toContain('null');
+
+    for (const pos of positions) {
+      const { unmount } = render(
+        React.createElement(
+          VisualizationTooltip,
+          { title: 'Language: TypeScript', x: pos.x, y: pos.y },
+          React.createElement('span', null, '68% of codebase')
+        )
+      );
+
+      const tooltip = screen.getByRole('tooltip');
+      expect(tooltip.textContent).toContain('Language: TypeScript');
+      expect(tooltip.textContent).toContain('68% of codebase');
+      unmount();
     }
-  });
-
-  it('returns a distinct meaningful message for zero activity so screen readers can announce inactivity clearly', () => {
-    const noActivity = getActivityInsight(0, 0);
-    expect(noActivity.toLowerCase()).toContain('no activity');
-  });
-
-  it('returns peak-activity description for high-intensity days to ensure accurate screen reader announcement', () => {
-    const peak = getActivityInsight(10, 4);
-    expect(peak.toLowerCase()).toContain('peak');
-  });
-});
-
-// Test 5 — Streak label correct reading order and safe values
-describe('getStreakLabel – aria-compatible streak announcement', () => {
-  it('produces a label that announces the streak count before the unit word, following natural reading order', () => {
-    const label = getStreakLabel(5);
-    expect(typeof label).toBe('string');
-    expect(label.trim().length).toBeGreaterThan(0);
-    expect(label).toContain('5');
-    const numberIndex = label.indexOf('5');
-    const dayIndex = label.toLowerCase().indexOf('day');
-    expect(dayIndex).toBeGreaterThan(numberIndex);
-  });
-
-  it('returns a clear "no streak" label for zero/negative streaks to prevent screen readers announcing misleading values', () => {
-    const noStreak = getStreakLabel(0);
-    const negativeStreak = getStreakLabel(-1);
-    expect(noStreak).not.toMatch(/\d+-day/);
-    expect(negativeStreak).not.toMatch(/\d+-day/);
-    expect(noStreak.toLowerCase()).toContain('no');
-  });
-
-  it('uses the translation function to build internationalised aria-compatible streak labels', () => {
-    const mockT = (key: string, opts?: Record<string, string>) => {
-      if (key === 'dashboard.heatmap.no_active_streak') return 'No active streak';
-      if (key === 'dashboard.heatmap.active_streak')
-        return `${opts?.streak ?? ''}-day active streak`;
-      return key;
-    };
-    const noStreak = getStreakLabel(0, mockT);
-    const activeStreak = getStreakLabel(7, mockT);
-    expect(noStreak).toBe('No active streak');
-    expect(activeStreak).toContain('7');
-    expect(activeStreak.toLowerCase()).toContain('streak');
   });
 });

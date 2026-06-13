@@ -389,6 +389,7 @@ interface GitHubGraphQLResponse {
       contributionsCollection: {
         totalPullRequestContributions: number;
         totalIssueContributions: number;
+        totalPullRequestReviewContributions: number;
         contributionCalendar: ContributionCalendar;
         commitContributionsByRepository: RepoContribution[];
       };
@@ -766,6 +767,7 @@ async function fetchContributionsUncached(
           contributionsCollection(from: $from, to: $to) {
             totalPullRequestContributions
             totalIssueContributions
+            totalPullRequestReviewContributions
             contributionCalendar {
               totalContributions
               weeks {
@@ -859,6 +861,8 @@ async function fetchContributionsUncached(
 
   const totalPRs = data.data.user.contributionsCollection?.totalPullRequestContributions || 0;
   const totalIssues = data.data.user.contributionsCollection?.totalIssueContributions || 0;
+  const totalReviews =
+    data.data.user.contributionsCollection?.totalPullRequestReviewContributions || 0;
 
   calendar.lastSyncedAt = new Date().toISOString();
 
@@ -871,6 +875,7 @@ async function fetchContributionsUncached(
         repoContributions,
         totalPRs,
         totalIssues,
+        totalReviews,
       },
       LONG_CACHE_TTL
     );
@@ -913,6 +918,7 @@ async function fetchContributionsUncached(
     repoContributions,
     totalPRs,
     totalIssues,
+    totalReviews,
   };
 }
 
@@ -1953,6 +1959,8 @@ export async function getFullDashboardData(username: string, options: FetchOptio
       totalPRs: calendarResult.status === 'fulfilled' ? (calendarResult.value.totalPRs ?? 0) : 0,
       totalIssues:
         calendarResult.status === 'fulfilled' ? (calendarResult.value.totalIssues ?? 0) : 0,
+      totalReviews:
+        calendarResult.status === 'fulfilled' ? (calendarResult.value.totalReviews ?? 0) : 0,
     },
     languages,
     activity: buildActivityMap(allDays),

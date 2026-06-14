@@ -101,8 +101,6 @@ describe('ContributorsPage Mouse Interactivity', () => {
   });
 
   it('renders successfully when contributor retrieval falls back to an empty state', async () => {
-    const originalFetch = global.fetch;
-
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 500,
@@ -118,7 +116,5 @@ describe('ContributorsPage Mouse Interactivity', () => {
     render(page);
 
     expect(screen.getByTestId('contributors-client')).toBeInTheDocument();
-
-    global.fetch = originalFetch;
   });
 });

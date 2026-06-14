@@ -28,7 +28,15 @@ describe('GET /api/repo-burnout', () => {
     refreshRateLimiter.reset();
     quotaMonitor.reset();
     vi.mocked(fetchBurnoutAnalysis).mockResolvedValue({
-      analysis: 'test analysis',
+      repoName: 'hello-world',
+      totalCommits: 100,
+      totalContributors: 5,
+      busFactor: 2,
+      dependencyRisk: 'Low',
+      sustainabilityScore: 75,
+      contributors: [],
+      inactivityAlerts: [],
+      recommendations: [],
     });
   });
 
@@ -44,7 +52,8 @@ describe('GET /api/repo-burnout', () => {
     const response = await GET(makeRequest({ owner: 'octocat', repo: 'hello-world' }));
     expect(response.status).toBe(200);
     const data = await response.json();
-    expect(data.analysis).toBe('test analysis');
+    expect(data.repoName).toBe('hello-world');
+    expect(data.totalCommits).toBe(100);
   });
 
   it('bypasses cache when refresh=true is specified and limits are not hit', async () => {
@@ -93,5 +102,76 @@ describe('GET /api/repo-burnout', () => {
     );
     expect(response2.status).toBe(200);
     expect(response2.headers.get('X-Cache-Status')).toBe('HIT');
+  });
+
+  // Tests for bypassCache parameter (treated same as refresh)
+  it('treats bypassCache=true as a refresh request', async () => {
+    const response = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', bypassCache: 'true' })
+    );
+    expect(response.status).toBe(200);
+    expect(response.headers.get('X-Cache-Status')).toBe('MISS');
+    expect(fetchBurnoutAnalysis).toHaveBeenCalledWith('octocat', 'hello-world', {
+      bypassCache: true,
+    });
+  });
+
+  it('returns 429 when GitHub API quota is low and bypassCache is requested', async () => {
+    quotaMonitor.setQuota(5000, 400, Date.now() + 60000); // 8% remaining
+    const response = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', bypassCache: 'true' })
+    );
+    expect(response.status).toBe(429);
+    const data = await response.json();
+    expect(data.error).toContain('quota is low');
+  });
+
+  it('returns 429 when IP refresh limit is exceeded for bypassCache', async () => {
+    refreshRateLimiter.setLimit(1, 60000); // 1 refresh per window
+    const response1 = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', bypassCache: 'true' })
+    );
+    expect(response1.status).toBe(200);
+
+    const response2 = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', bypassCache: 'true' })
+    );
+    expect(response2.status).toBe(429);
+  });
+
+  it('falls back to cached data when per-repository cooldown is active for bypassCache', async () => {
+    const response1 = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', bypassCache: 'true' })
+    );
+    expect(response1.status).toBe(200);
+    expect(response1.headers.get('X-Cache-Status')).toBe('MISS');
+
+    const response2 = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', bypassCache: 'true' })
+    );
+    expect(response2.status).toBe(200);
+    expect(response2.headers.get('X-Cache-Status')).toBe('HIT');
+  });
+
+  it('shares rate limit between refresh and bypassCache parameters', async () => {
+    refreshRateLimiter.setLimit(2, 60000); // 2 refreshes per window
+
+    // First request with refresh=true
+    const response1 = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', refresh: 'true' })
+    );
+    expect(response1.status).toBe(200);
+
+    // Second request with bypassCache=true (should count against same limit)
+    const response2 = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', bypassCache: 'true' })
+    );
+    expect(response2.status).toBe(200);
+
+    // Third request should be rate limited
+    const response3 = await GET(
+      makeRequest({ owner: 'octocat', repo: 'hello-world', refresh: 'true' })
+    );
+    expect(response3.status).toBe(429);
   });
 });

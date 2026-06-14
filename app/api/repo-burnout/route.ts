@@ -6,6 +6,10 @@ import { getClientIp } from '@/utils/getClientIp';
 import { refreshPolicy } from '@/services/github/refresh-policy';
 import { refreshRateLimiter } from '@/services/github/refresh-rate-limiter';
 
+function toRefreshFlag(val?: string): boolean {
+  return val === 'true' || val === '1';
+}
+
 const repoBurnoutParamsSchema = z.object({
   owner: z
     .string({ error: 'Owner is required' })
@@ -23,10 +27,8 @@ const repoBurnoutParamsSchema = z.object({
     .regex(/^[a-zA-Z0-9._-]+$/, {
       message: 'Invalid repo name format',
     }),
-  refresh: z
-    .string()
-    .optional()
-    .transform((val) => val === 'true' || val === '1'),
+  refresh: z.string().optional().transform(toRefreshFlag),
+  bypassCache: z.string().optional().transform(toRefreshFlag),
 });
 
 export async function GET(request: Request) {
@@ -42,10 +44,13 @@ export async function GET(request: Request) {
     );
   }
 
-  const { owner, repo, refresh } = parseResult.data;
+  const { owner, repo, refresh, bypassCache: bypassCacheParam } = parseResult.data;
+
+  // Treat either ?refresh=true or ?bypassCache=true as a cache-bypass request
+  const isRefreshRequested = refresh || bypassCacheParam;
 
   // 1. Quota awareness check - block manual refreshes if GitHub API quota is low
-  if (refresh && quotaMonitor.isQuotaLow()) {
+  if (isRefreshRequested && quotaMonitor.isQuotaLow()) {
     console.warn(`[Quota Low] Blocked manual refresh from IP ${ip} for ${owner}/${repo}`);
     return NextResponse.json(
       { error: 'GitHub API quota is low. Cache refresh temporarily disabled.' },
@@ -53,7 +58,7 @@ export async function GET(request: Request) {
     );
   }
 
-  if (refresh) {
+  if (isRefreshRequested) {
     const rateLimitCheck = refreshRateLimiter.checkLimit(ip);
     if (!rateLimitCheck.success) {
       console.warn(
@@ -73,8 +78,8 @@ export async function GET(request: Request) {
     }
   }
 
-  let shouldBypassCache = refresh;
-  if (refresh) {
+  let shouldBypassCache = isRefreshRequested;
+  if (isRefreshRequested) {
     const resourceKey = `${owner}/${repo}`;
     if (!refreshPolicy.isRefreshAllowed(resourceKey)) {
       shouldBypassCache = false;
